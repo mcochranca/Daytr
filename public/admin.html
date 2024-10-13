@@ -1,0 +1,172 @@
+<html><head><base href="https://localtrade.example.com/admin">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LocalTrade - Admin Login</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+<style>
+  :root {
+    --primary-color: #00b9f1;
+    --secondary-color: #002e6e;
+    --background-color: #f0f3f7;
+    --text-color: #333;
+    --card-bg: white;
+    --footer-bg: #333;
+    --footer-text: #fff;
+  }
+  
+  body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+  }
+  
+  .header {
+    background-color: var(--primary-color);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .main-content {
+    padding: 2rem;
+    max-width: 400px;
+    margin: 2rem auto;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  h1 {
+    text-align: center;
+    color: var(--secondary-color);
+  }
+  
+  .login-form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  
+  input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  
+  button:hover {
+    background-color: var(--secondary-color);
+  }
+  
+  .error-message {
+    color: #f44336;
+    margin-top: 1rem;
+    text-align: center;
+  }
+  
+  .footer {
+    background-color: var(--footer-bg);
+    color: var(--footer-text);
+    text-align: center;
+    padding: 1rem;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+  }
+  
+  .footer a {
+    color: var(--footer-text);
+    text-decoration: none;
+    margin: 0 0.5rem;
+  }
+</style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo">LocalTrade</div>
+  </header>
+  
+  <main class="main-content">
+    <h1>Admin Login</h1>
+    <form class="login-form" id="adminLoginForm">
+      <div class="form-group">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+      <button type="submit">Login</button>
+    </form>
+    <div class="error-message" id="errorMessage"></div>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2023 LocalTrade. All rights reserved.</p>
+    <nav>
+      <a href="/about">About Us</a> |
+      <a href="/terms">Terms of Service</a> |
+      <a href="/privacy">Privacy Policy</a> |
+      <a href="/contact">Contact Us</a>
+    </nav>
+  </footer>
+
+  <script>
+    const adminLoginForm = document.getElementById('adminLoginForm');
+    const errorMessage = document.getElementById('errorMessage');
+
+    adminLoginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      if (!username || !password) {
+        errorMessage.textContent = 'Please enter both username and password.';
+        return;
+      }
+
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        if (username === 'admin' && password === 'password') {
+          window.location.href = '/admin-dashboard';
+        } else {
+          errorMessage.textContent = 'Invalid username or password.';
+        }
+      } catch (error) {
+        console.error('Error during login:', error);
+        errorMessage.textContent = 'An error occurred. Please try again later.';
+      }
+    });
+  </script>
+</body>
+</html>

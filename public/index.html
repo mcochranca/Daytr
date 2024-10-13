@@ -1,0 +1,697 @@
+<html><head><base href="https://localtrade.example.com/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LocalTrade - Your Community Marketplace</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+<style>
+  :root {
+    --primary-color: #00b9f1;
+    --secondary-color: #002e6e;
+    --background-color: #f0f3f7;
+    --text-color: #333;
+    --sidebar-width: 250px;
+    --card-bg: white;
+    --footer-bg: #333;
+    --footer-text: #fff;
+  }
+  
+  body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+  }
+  
+  .header {
+    background-color: var(--primary-color);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+  }
+  
+  .logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .menu-toggle {
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -var(--sidebar-width);
+    width: var(--sidebar-width);
+    height: 100%;
+    background-color: var(--card-bg);
+    transition: left 0.3s ease;
+    z-index: 1001;
+    overflow-y: auto;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  }
+  
+  .sidebar.active {
+    left: 0;
+  }
+  
+  .sidebar-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 1rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+  
+  .sidebar-menu {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .sidebar-menu li a {
+    display: block;
+    padding: 1rem;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: background-color 0.3s;
+  }
+  
+  .sidebar-menu li a:hover {
+    background-color: var(--background-color);
+  }
+  
+  .sidebar-menu li a i {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+  }
+  
+  .main-content {
+    padding: 1rem;
+    margin-top: calc(33vh + 60px);
+    transition: margin-left 0.3s ease;
+    min-height: calc(100vh - 120px - 33vh);
+  }
+  
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+  }
+  
+  .widget {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .widget:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+  
+  .widget-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: var(--secondary-color);
+  }
+  
+  .chart-container {
+    height: 300px;
+  }
+  
+  .live-feed {
+    height: 300px;
+    overflow-y: auto;
+  }
+  
+  .feed-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .feed-item:last-child {
+    border-bottom: none;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  .live-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background-color: #00ff00;
+    border-radius: 50%;
+    margin-right: 5px;
+    animation: pulse 2s infinite;
+  }
+  
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--card-bg);
+    display: flex;
+    justify-content: space-around;
+    padding: 0.5rem;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+  }
+  
+  .bottom-nav a {
+    color: var(--text-color);
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.8rem;
+  }
+  
+  .bottom-nav i {
+    font-size: 1.5rem;
+    margin-bottom: 0.2rem;
+  }
+  
+  .footer {
+    background-color: var(--footer-bg);
+    color: var(--footer-text);
+    text-align: center;
+    padding: 1rem;
+    margin-top: 2rem;
+  }
+  
+  .theme-toggle {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    z-index: 1000;
+    background-color: var(--card-bg);
+    padding: 10px;
+    border-radius: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  
+  .theme-toggle label {
+    display: flex;
+    align-items: center;
+  }
+  
+  .theme-toggle input {
+    width: 40px;
+    height: 20px;
+    -webkit-appearance: none;
+    background-color: #ccc;
+    outline: none;
+    border-radius: 20px;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+    transition: 0.5s;
+    position: relative;
+  }
+  
+  .theme-toggle input:checked {
+    background-color: var(--primary-color);
+  }
+  
+  .theme-toggle input:before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    top: 0;
+    left: 0;
+    background-color: #fff;
+    transform: scale(1.1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: 0.5s;
+  }
+  
+  .theme-toggle input:checked:before {
+    left: 20px;
+  }
+  
+  .expand-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  
+  .json-content {
+    background-color: var(--card-bg);
+    border: 1px solid var(--text-color);
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 10px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  
+  .graph-container {
+    width: 100%;
+    height: 33vh;
+    margin-top: 60px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  #graph {
+    width: 100%;
+    height: 100%;
+  }
+
+  .node {
+    cursor: pointer;
+  }
+
+  .link {
+    stroke: #999;
+    stroke-opacity: 0.6;
+  }
+
+  .tooltip {
+    position: absolute;
+    background-color: var(--card-bg);
+    border: 1px solid var(--text-color);
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 12px;
+    pointer-events: none;
+  }
+
+  @media (max-width: 768px) {
+    .dashboard {
+      grid-template-columns: 1fr;
+    }
+    
+    .main-content {
+      margin-bottom: 60px;
+    }
+  }
+  
+  @media (min-width: 769px) {
+    .bottom-nav {
+      display: none;
+    }
+    
+    .main-content.sidebar-active {
+      margin-left: var(--sidebar-width);
+    }
+  }
+</style>
+</head>
+<body>
+  <header class="header">
+    <div class="menu-toggle" id="menuToggle">
+      <i class="fas fa-bars"></i>
+    </div>
+    <div class="logo">LocalTrade</div>
+  </header>
+  
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">Menu</div>
+    <ul class="sidebar-menu">
+      <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
+      <li><a href="/market"><i class="fas fa-chart-line"></i>Market</a></li>
+      <li><a href="/wallet"><i class="fas fa-wallet"></i>Wallet</a></li>
+      <li><a href="/trade"><i class="fas fa-exchange-alt"></i>Trade</a></li>
+      <li><a href="/portfolio"><i class="fas fa-briefcase"></i>Portfolio</a></li>
+      <li><a href="/settings"><i class="fas fa-cog"></i>Settings</a></li>
+      <li><a href="/support"><i class="fas fa-headset"></i>Support</a></li>
+      <li><a href="/admin"><i class="fas fa-user-shield"></i>Admin Login</a></li>
+    </ul>
+  </nav>
+  
+  <div class="theme-toggle">
+    <label>
+      <input type="checkbox" id="themeToggle">
+      <span>Dark Mode</span>
+    </label>
+  </div>
+
+  <div id="graphContainer" class="graph-container">
+    <svg id="graph"></svg>
+  </div>
+  
+  <main class="main-content" id="mainContent">
+    <div class="dashboard">
+      <a href="/market-overview" class="widget">
+        <h2 class="widget-title">Market Overview</h2>
+        <div class="chart-container">
+          <canvas id="marketOverviewChart"></canvas>
+        </div>
+        <button class="expand-btn" data-target="marketOverviewData">Expand</button>
+        <pre class="json-content" id="marketOverviewData" style="display: none;"></pre>
+      </a>
+      <a href="/portfolio-details" class="widget">
+        <h2 class="widget-title">Your Portfolio</h2>
+        <div class="chart-container">
+          <canvas id="portfolioChart"></canvas>
+        </div>
+        <button class="expand-btn" data-target="portfolioData">Expand</button>
+        <pre class="json-content" id="portfolioData" style="display: none;"></pre>
+      </a>
+      <a href="/live-trades" class="widget">
+        <h2 class="widget-title"><span class="live-indicator"></span>Live Trades</h2>
+        <div class="live-feed" id="liveFeed"></div>
+        <button class="expand-btn" data-target="liveTradesData">Expand</button>
+        <pre class="json-content" id="liveTradesData" style="display: none;"></pre>
+      </a>
+      <div class="widget">
+        <h2 class="widget-title">Quick Trade</h2>
+        <form id="quickTradeForm">
+          <select id="assetSelect" required>
+            <option value="">Select Asset</option>
+            <option value="BTC">Bitcoin</option>
+            <option value="ETH">Ethereum</option>
+            <option value="LTC">Litecoin</option>
+          </select>
+          <input type="number" id="tradeAmount" placeholder="Amount" required>
+          <button type="submit">Trade</button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="/dashboard"><i class="fas fa-home"></i>Home</a>
+    <a href="/market"><i class="fas fa-chart-line"></i>Market</a>
+    <a href="/trade"><i class="fas fa-exchange-alt"></i>Trade</a>
+    <a href="/wallet"><i class="fas fa-wallet"></i>Wallet</a>
+    <a href="/profile"><i class="fas fa-user"></i>Profile</a>
+  </nav>
+
+  <footer class="footer">
+    <p>&copy; 2023 LocalTrade. All rights reserved.</p>
+    <nav>
+      <a href="/about">About Us</a> |
+      <a href="/terms">Terms of Service</a> |
+      <a href="/privacy">Privacy Policy</a> |
+      <a href="/contact">Contact Us</a>
+    </nav>
+  </footer>
+
+  <script>
+    // Sidebar toggle functionality
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('active');
+      mainContent.classList.toggle('sidebar-active');
+    });
+
+    // Market Overview Chart
+    const marketOverviewCtx = document.getElementById('marketOverviewChart').getContext('2d');
+    const marketOverviewChart = new Chart(marketOverviewCtx, {
+      type: 'line',
+      data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{
+          label: 'Market Value',
+          data: [12, 19, 3, 5, 2, 3],
+          borderColor: 'rgb(75, 192, 192)',
+          tension: 0.1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    });
+
+    // Portfolio Chart
+    const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
+    const portfolioChart = new Chart(portfolioCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Bitcoin', 'Ethereum', 'Litecoin'],
+        datasets: [{
+          data: [300, 50, 100],
+          backgroundColor: [
+            'rgb(255, 99, 132)',
+            'rgb(54, 162, 235)',
+            'rgb(255, 205, 86)'
+          ]
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    });
+
+    // Live Trades Feed
+    const liveFeed = document.getElementById('liveFeed');
+    function addTradeToFeed(trade) {
+      const feedItem = document.createElement('div');
+      feedItem.classList.add('feed-item');
+      feedItem.textContent = `${trade.asset}: ${trade.amount} @ ${trade.price}`;
+      liveFeed.prepend(feedItem);
+      if (liveFeed.children.length > 10) {
+        liveFeed.removeChild(liveFeed.lastChild);
+      }
+    }
+
+    // Simulating live trades
+    setInterval(() => {
+      const assets = ['BTC', 'ETH', 'LTC'];
+      const trade = {
+        asset: assets[Math.floor(Math.random() * assets.length)],
+        amount: (Math.random() * 10).toFixed(2),
+        price: (Math.random() * 1000).toFixed(2)
+      };
+      addTradeToFeed(trade);
+    }, 5000);
+
+    // Quick Trade Form
+    const quickTradeForm = document.getElementById('quickTradeForm');
+    quickTradeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const asset = document.getElementById('assetSelect').value;
+      const amount = document.getElementById('tradeAmount').value;
+      
+      try {
+        // Simulating API call
+        const response = await axios.post('/api/trade', { asset, amount });
+        alert(`Trade successful: ${asset} ${amount}`);
+      } catch (error) {
+        alert('Trade failed. Please try again.');
+      }
+    });
+
+    // Function for expanding cards and loading JSON data
+    document.querySelectorAll('.expand-btn').forEach(button => {
+      button.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const targetId = button.getAttribute('data-target');
+        const targetElement = document.getElementById(targetId);
+        
+        if (targetElement.style.display === 'none') {
+          try {
+            const response = await axios.get(`/api/${targetId}`);
+            targetElement.textContent = JSON.stringify(response.data, null, 2);
+            targetElement.style.display = 'block';
+            button.textContent = 'Collapse';
+          } catch (error) {
+            console.error('Error fetching JSON data:', error);
+            targetElement.textContent = 'Error loading data';
+            targetElement.style.display = 'block';
+          }
+        } else {
+          targetElement.style.display = 'none';
+          button.textContent = 'Expand';
+        }
+      });
+    });
+
+    // Function to load and update chart data
+    async function updateChartData() {
+      try {
+        // Simulating API call to get market data
+        const marketData = await axios.get('/api/market-data');
+        marketOverviewChart.data.labels = marketData.data.labels;
+        marketOverviewChart.data.datasets[0].data = marketData.data.values;
+        marketOverviewChart.update();
+
+        // Simulating API call to get portfolio data
+        const portfolioData = await axios.get('/api/portfolio-data');
+        portfolioChart.data.labels = portfolioData.data.labels;
+        portfolioChart.data.datasets[0].data = portfolioData.data.values;
+        portfolioChart.update();
+      } catch (error) {
+        console.error('Error updating chart data:', error);
+      }
+    }
+
+    // Update chart data every 5 minutes
+    setInterval(updateChartData, 5 * 60 * 1000);
+
+    // Initial data load
+    updateChartData();
+
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const root = document.documentElement;
+
+    themeToggle.addEventListener('change', () => {
+      if (themeToggle.checked) {
+        // Dark theme
+        root.style.setProperty('--primary-color', '#00b9f1');
+        root.style.setProperty('--secondary-color', '#002e6e');
+        root.style.setProperty('--background-color', '#1a1a1a');
+        root.style.setProperty('--text-color', '#ffffff');
+        root.style.setProperty('--card-bg', '#2a2a2a');
+        root.style.setProperty('--footer-bg', '#333');
+        root.style.setProperty('--footer-text', '#fff');
+      } else {
+        // Light theme
+        root.style.setProperty('--primary-color', '#00b9f1');
+        root.style.setProperty('--secondary-color', '#002e6e');
+        root.style.setProperty('--background-color', '#f0f3f7');
+        root.style.setProperty('--text-color', '#333');
+        root.style.setProperty('--card-bg', 'white');
+        root.style.setProperty('--footer-bg', '#333');
+        root.style.setProperty('--footer-text', '#fff');
+      }
+    });
+
+    // Graph visualization code
+    const graphData = {
+      nodes: [
+        { id: 1, label: "Law A", type: "law" },
+        { id: 2, label: "Law B", type: "law" },
+        { id: 3, label: "Trend 1", type: "trend" },
+        { id: 4, label: "Trend 2", type: "trend" },
+        { id: 5, label: "Law C", type: "law" },
+      ],
+      links: [
+        { source: 1, target: 2, strength: 0.5 },
+        { source: 1, target: 3, strength: 0.8 },
+        { source: 2, target: 4, strength: 0.3 },
+        { source: 3, target: 4, strength: 0.7 },
+        { source: 2, target: 5, strength: 0.6 },
+      ]
+    };
+    
+    const width = document.getElementById('graphContainer').clientWidth;
+    const height = document.getElementById('graphContainer').clientHeight;
+    
+    const svg = d3.select("#graph")
+      .attr("width", width)
+      .attr("height", height);
+    
+    const simulation = d3.forceSimulation(graphData.nodes)
+      .force("link", d3.forceLink(graphData.links).id(d => d.id))
+      .force("charge", d3.forceManyBody().strength(-100))
+      .force("center", d3.forceCenter(width / 2, height / 2));
+    
+    const link = svg.append("g")
+      .selectAll("line")
+      .data(graphData.links)
+      .enter().append("line")
+      .attr("class", "link")
+      .attr("stroke-width", d => d.strength * 2);
+    
+    const node = svg.append("g")
+      .selectAll("circle")
+      .data(graphData.nodes)
+      .enter().append("circle")
+      .attr("class", "node")
+      .attr("r", 10)
+      .attr("fill", d => d.type === "law" ? "#ff7f0e" : "#1f77b4")
+      .call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));
+    
+    const label = svg.append("g")
+      .selectAll("text")
+      .data(graphData.nodes)
+      .enter().append("text")
+      .text(d => d.label)
+      .attr("font-size", 12)
+      .attr("dx", 12)
+      .attr("dy", 4);
+    
+    simulation.on("tick", () => {
+      link
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+    
+      node
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+    
+      label
+        .attr("x", d => d.x)
+        .attr("y", d => d.y);
+    });
+    
+    function dragstarted(event, d) {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+    
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+    
+    function dragended(event, d) {
+      if (!event.active) simulation.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    }
+    
+    // Tooltip
+    const tooltip = d3.select("body").append("div")
+      .attr("class", "tooltip")
+      .style("opacity", 0);
+    
+    node.on("mouseover", (event, d) => {
+      tooltip.transition()
+        .duration(200)
+        .style("opacity", .9);
+      tooltip.html(`${d.type.charAt(0).toUpperCase() + d.type.slice(1)}: ${d.label}`)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mouseout", () => {
+      tooltip.transition()
+        .duration(500)
+        .style("opacity", 0);
+    });
+  </script>
+</body></html>
